@@ -26,7 +26,7 @@ class ECGSequence(Sequence):
         self.f = h5py.File(path_to_hdf5, "r")
 
         # list all datasets in hdf5 file
-        with self.f as hdf:
+        with h5py.File(path_to_hdf5, "r") as hdf:
             # Recursively list all datasets in the file
             def list_datasets(name, obj):
                 if isinstance(obj, h5py.Dataset):
