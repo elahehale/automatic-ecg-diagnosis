@@ -83,6 +83,11 @@ class ResidualUnit(object):
         x, y = inputs
         n_samples_in = y.shape[1]
         downsample = n_samples_in // self.n_samples_out
+
+        if n_samples_in % self.n_samples_out != 0:
+            raise ValueError("Downsampling factor must be an integer and input size must be divisible by the output "
+                             "size.")
+
         n_filters_in = y.shape[2]
         y = self._skip_connection(y, downsample, n_filters_in)
         # 1st layer
@@ -117,20 +122,28 @@ def get_model(n_classes, last_layer='sigmoid'):
     kernel_initializer = 'he_normal'
     signal = Input(shape=(4096, 12), dtype=np.float32, name='signal')
     x = signal
+    print("Input shape:", x.shape)
     x = Conv1D(64, kernel_size, padding='same', use_bias=False,
                kernel_initializer=kernel_initializer)(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
+    print("After initial Conv1D:", x.shape)
     x, y = ResidualUnit(1024, 128, kernel_size=kernel_size,
                         kernel_initializer=kernel_initializer)([x, x])
+    print("After first ResidualUnit:", x.shape, y.shape)
     x, y = ResidualUnit(256, 196, kernel_size=kernel_size,
                         kernel_initializer=kernel_initializer)([x, y])
+    print("After second ResidualUnit:", x.shape, y.shape)
     x, y = ResidualUnit(64, 256, kernel_size=kernel_size,
                         kernel_initializer=kernel_initializer)([x, y])
+    print("After third ResidualUnit:", x.shape, y.shape)
     x, _ = ResidualUnit(16, 320, kernel_size=kernel_size,
                         kernel_initializer=kernel_initializer)([x, y])
+    print("After fourth ResidualUnit:", x.shape)
     x = Flatten()(x)
+    print("After Flatten:", x.shape)
     diagn = Dense(n_classes, activation=last_layer, kernel_initializer=kernel_initializer)(x)
+    print("After Dense:", diagn.shape)
     model = Model(signal, diagn)
     return model
 
